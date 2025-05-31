@@ -1,63 +1,71 @@
-
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>سیستم یادآوری تولد</title>
+  <title>یادآوری تولد مشتریان</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/jalaali-js@1.1.0/dist/jalaali.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jalaali-js@1.1.0/dist/jalaali.min.js"></script>
+
   <script type="module">
-    // پیکربندی Firebase (اطلاعات واقعی خودت رو جایگزین کن)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+    import {
+      getDatabase, ref, set, get, push, child, onValue
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
     const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "SENDER_ID",
-      appId: "APP_ID"
+      apiKey: "AIzaSyApghhs_DMICj5mvR8UkqHw-Cs63Ft8pCk",
+      authDomain: "tavalod-moshtari.firebaseapp.com",
+      databaseURL: "https://tavalod-moshtari-default-rtdb.firebaseio.com",
+      projectId: "tavalod-moshtari",
+      storageBucket: "tavalod-moshtari.firebasestorage.app",
+      messagingSenderId: "405360346824",
+      appId: "1:405360346824:web:5c66b7ac983b2ac3a487fd"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    window.saveCongratulations = async function(customerId) {
-      const today = new Date();
-      const j = jalaali.toJalaali(today);
-      const todayKey = `${j.jy}-${j.jm}-${j.jd}`;
-      await set(ref(db, 'congratulated/' + todayKey + '/' + customerId), true);
-    }
-
-    window.checkCongratulations = async function(customerId, callback) {
-      const today = new Date();
-      const j = jalaali.toJalaali(today);
-      const todayKey = `${j.jy}-${j.jm}-${j.jd}`;
-      const snapshot = await get(ref(db, 'congratulated/' + todayKey + '/' + customerId));
-      callback(snapshot.exists());
-    }
-
-    window.getTodayJalali = function() {
-      const today = new Date();
-      const j = jalaali.toJalaali(today);
+    window.getTodayJalali = () => {
+      const g = new Date();
+      const j = window.jalaali.toJalaali(g);
       return {
-        str: `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')}`,
-        day: j.jd,
+        full: `${j.jy}/${String(j.jm).padStart(2, '0')}/${String(j.jd).padStart(2, '0')}`,
+        key: `${j.jy}-${j.jm}-${j.jd}`,
+        year: j.jy,
         month: j.jm,
-        year: j.jy
+        day: j.jd
       };
-    }
+    };
+
+    window.saveCongrats = async (id) => {
+      const today = getTodayJalali();
+      await set(ref(db, `congratulated/${today.key}/${id}`), true);
+    };
+
+    window.checkCongrats = async (id) => {
+      const today = getTodayJalali();
+      const snapshot = await get(ref(db, `congratulated/${today.key}/${id}`));
+      return snapshot.exists();
+    };
+
+    window.firebaseApp = app;
+    window.firebaseDB = db;
+    window.firebaseRef = ref;
+    window.firebasePush = push;
+    window.firebaseSet = set;
+    window.firebaseOnValue = onValue;
+    window.firebaseGet = get;
+    window.firebaseChild = child;
   </script>
+
   <style>
     body { font-family: sans-serif; }
     .birthday-today {
-      background: #fee2e2;
+      background-color: #fee2e2;
       padding: 10px;
-      margin-bottom: 10px;
       border-radius: 8px;
+      margin-bottom: 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -72,33 +80,33 @@
       width: 40px;
       height: 40px;
       font-size: 20px;
-      line-height: 40px;
       text-align: center;
+      line-height: 40px;
       cursor: pointer;
-      z-index: 100;
+      z-index: 999;
     }
     #futureBirthdaysPanel {
       display: none;
       position: fixed;
-      top: 80px;
+      bottom: 80px;
       left: 20px;
       background: white;
       border: 1px solid #ccc;
       padding: 10px;
       max-height: 300px;
       overflow-y: auto;
-      z-index: 99;
       box-shadow: 0 0 8px rgba(0,0,0,0.1);
+      z-index: 998;
     }
   </style>
 </head>
 <body class="p-4 bg-gray-50">
   <h1 class="text-2xl font-bold mb-6 text-indigo-700">🎂 تولدهای امروز</h1>
 
-  <!-- لیست تولدهای امروز -->
+  <!-- نمایش تولدهای امروز -->
   <div id="todayBirthdays"></div>
 
-  <!-- آیکون عدد 7 برای نمایش تولدهای آینده -->
+  <!-- آیکون 7 برای تولدهای آینده -->
   <div id="futureToggleBtn">7</div>
 
   <!-- پنل تولدهای ۷ روز آینده -->
@@ -106,121 +114,99 @@
     <h2 class="font-bold mb-2">🎁 تولدهای ۷ روز آینده</h2>
     <div id="futureBirthdays"></div>
   </div>
-
   <script type="module">
-    // فرض: لیست مشتریان (می‌تونه از Firebase یا JSON هم بیاد)
-    const customers = [
-      { id: 1, name: 'علی رضایی', birth: '1403/03/10' },
-      { id: 2, name: 'زهرا کریمی', birth: '1403/03/12' },
-      { id: 3, name: 'مهدی حسینی', birth: '1403/03/17' },
-      { id: 4, name: 'فاطمه زارع', birth: '1403/03/10' }
-    ];
-
     const today = getTodayJalali();
-    const todayStr = today.str;
-    const todayContainer = document.getElementById('todayBirthdays');
-    const futureContainer = document.getElementById('futureBirthdays');
+    const db = window.firebaseDB;
+    const ref = window.firebaseRef;
+    const get = window.firebaseGet;
+    const push = window.firebasePush;
+    const onValue = window.firebaseOnValue;
+    const checkCongrats = window.checkCongrats;
+    const saveCongrats = window.saveCongrats;
 
-    customers.forEach(customer => {
-      const [y, m, d] = customer.birth.split('/').map(x => parseInt(x));
-      const isToday = (y === today.year && m === today.month && d === today.day);
-      const dayDiff = d - today.day;
+    const todayDiv = document.getElementById('todayBirthdays');
+    const futureDiv = document.getElementById('futureBirthdays');
+    const customersRef = ref(db, 'customers');
 
-      if (m === today.month && dayDiff > 0 && dayDiff <= 7) {
-        // تولد در ۷ روز آینده
-        const div = document.createElement('div');
-        div.className = 'birthday-soon border-b border-gray-200 py-2';
-        div.textContent = `${customer.name} - ${customer.birth}`;
-        futureContainer.appendChild(div);
-      }
+    onValue(customersRef, (snapshot) => {
+      const data = snapshot.val();
+      todayDiv.innerHTML = '';
+      futureDiv.innerHTML = '';
 
-      if (isToday) {
-        // تولد امروز
-        const div = document.createElement('div');
-        div.className = 'birthday-today';
-        const info = document.createElement('span');
-        info.innerHTML = `<strong>${customer.name}</strong> - ${customer.birth}`;
-        const btn = document.createElement('button');
-        btn.className = 'bg-green-600 text-white px-3 py-1 rounded text-sm';
-        btn.textContent = '🎉 تبریک بگو';
-        btn.disabled = true;
+      for (let id in data) {
+        const customer = data[id];
+        const [y, m, d] = customer.birth.split('/').map(x => parseInt(x));
+        const isToday = (m === today.month && d === today.day);
+        const dayDiff = d - today.day;
 
-        checkCongratulations(customer.id, (already) => {
-          if (already) {
-            btn.textContent = '✅ تبریک گفته شد';
-            btn.disabled = true;
-          } else {
-            btn.disabled = false;
-            btn.addEventListener('click', async () => {
-              await saveCongratulations(customer.id);
+        if (m === today.month && dayDiff > 0 && dayDiff <= 7) {
+          const div = document.createElement('div');
+          div.className = 'border-b border-gray-200 py-2';
+          div.textContent = `${customer.name} - ${customer.birth}`;
+          futureDiv.appendChild(div);
+        }
+
+        if (isToday) {
+          const div = document.createElement('div');
+          div.className = 'birthday-today';
+          const info = document.createElement('span');
+          info.innerHTML = `<strong>${customer.name}</strong> - ${customer.birth}`;
+          const btn = document.createElement('button');
+          btn.className = 'bg-green-600 text-white px-3 py-1 rounded text-sm';
+          btn.textContent = '🎉 تبریک بگو';
+          btn.disabled = true;
+          checkCongrats(id).then(already => {
+            if (already) {
               btn.textContent = '✅ تبریک گفته شد';
               btn.disabled = true;
-            });
-          }
-        });
+            } else {
+              btn.disabled = false;
+              btn.addEventListener('click', async () => {
+                await saveCongrats(id);
+                btn.textContent = '✅ تبریک گفته شد';
+                btn.disabled = true;
+              });
+            }
+          });
 
-        div.appendChild(info);
-        div.appendChild(btn);
-        todayContainer.appendChild(div);
+          div.appendChild(info);
+          div.appendChild(btn);
+          todayDiv.appendChild(div);
+        }
       }
     });
 
-    // کنترل نمایش و پنهان کردن پنل تولدهای آینده
+    // کنترل باز و بسته شدن پنل تولدهای آینده
     document.getElementById('futureToggleBtn').addEventListener('click', () => {
       const panel = document.getElementById('futureBirthdaysPanel');
       panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
     });
   </script>
-</body>
-</html>
-    customers.forEach(customer => {
-      const [y, m, d] = customer.birth.split('/').map(x => parseInt(x));
-      const isToday = (m === today.month && d === today.day);
-      const dayDiff = d - today.day;
+  <hr class="my-8">
+  <h2 class="text-lg font-bold text-indigo-700 mb-4">➕ افزودن مشتری جدید</h2>
+  <form id="addCustomerForm" class="space-y-4 max-w-md">
+    <input type="text" id="name" placeholder="نام کامل" required class="w-full border p-2 rounded">
+    <input type="text" id="phone" placeholder="شماره تماس" required class="w-full border p-2 rounded">
+    <input type="text" id="birth" placeholder="تاریخ تولد (مثلاً 1403/03/10)" required class="w-full border p-2 rounded">
+    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">ثبت مشتری</button>
+  </form>
+  <script type="module">
+    const addForm = document.getElementById("addCustomerForm");
+    addForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const birth = document.getElementById("birth").value.trim();
 
-      if (m === today.month && dayDiff > 0 && dayDiff <= 7) {
-        // تولد در ۷ روز آینده
-        const div = document.createElement('div');
-        div.className = 'birthday-soon border-b border-gray-200 py-2';
-        div.textContent = `${customer.name} - ${customer.birth}`;
-        futureContainer.appendChild(div);
+      if (!name || !phone || !birth) {
+        alert("لطفاً همه فیلدها را پر کنید.");
+        return;
       }
 
-      if (isToday) {
-        // تولد امروز
-        const div = document.createElement('div');
-        div.className = 'birthday-today';
-        const info = document.createElement('span');
-        info.innerHTML = `<strong>${customer.name}</strong> - ${customer.birth}`;
-        const btn = document.createElement('button');
-        btn.className = 'bg-green-600 text-white px-3 py-1 rounded text-sm';
-        btn.textContent = '🎉 تبریک بگو';
-        btn.disabled = true;
-
-        // چک کردن تبریک از Firebase
-        checkCongratulations(customer.id, (already) => {
-          if (already) {
-            btn.textContent = '✅ تبریک گفته شد';
-            btn.disabled = true;
-          } else {
-            btn.disabled = false;
-            btn.addEventListener('click', async () => {
-              await saveCongratulations(customer.id);
-              btn.textContent = '✅ تبریک گفته شد';
-              btn.disabled = true;
-            });
-          }
-        });
-
-        div.appendChild(info);
-        div.appendChild(btn);
-        todayContainer.appendChild(div);
-      }
-    });
-    // کنترل نمایش و پنهان کردن لیست تولدهای آینده
-    document.getElementById('futureToggleBtn').addEventListener('click', () => {
-      const panel = document.getElementById('futureBirthdaysPanel');
-      panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      const newCustomer = { name, phone, birth };
+      await push(ref(db, "customers"), newCustomer);
+      alert("✅ مشتری با موفقیت ثبت شد.");
+      addForm.reset();
     });
   </script>
 </body>
