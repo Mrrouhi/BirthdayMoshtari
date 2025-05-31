@@ -1,0 +1,836 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سيستم يادآوري تولد مشتريان - تقويم جلالي</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+  <style>
+    body {
+      font-family: 'Vazirmatn', sans-serif;
+    }
+    .birthday-soon {
+      background-color: #FECACA;
+    }
+    .birthday-today {
+      background-color: #FEE2E2;
+    }
+    .jalali-datepicker {
+      position: absolute;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.375rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      z-index: 50;
+      width: 300px;
+    }
+    .jalali-datepicker .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      background-color: #f3f4f6;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .jalali-datepicker .days,
+    .jalali-datepicker .weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+      padding: 0.5rem;
+    }
+    .jalali-datepicker .day,
+    .jalali-datepicker .weekday {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 2rem;
+      cursor: pointer;
+      border-radius: 0.25rem;
+    }
+    .jalali-datepicker .day:hover {
+      background-color: #f3f4f6;
+    }
+    .jalali-datepicker .day.selected {
+      background-color: #4f46e5;
+      color: white;
+    }
+    .jalali-datepicker .day.today {
+      border: 1px solid #4f46e5;
+    }
+    .jalali-datepicker .day.other-month {
+      color: #9ca3af;
+    }
+    .jalali-datepicker .weekday {
+      font-weight: 600;
+      color: #4b5563;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+  <div class="container mx-auto px-4 py-8">
+    <header class="bg-white rounded-lg shadow-lg p-6 mb-8">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <h1 class="text-2xl font-bold text-indigo-800 mb-4 md:mb-0">سيستم يادآوري تولد مشتريان</h1>
+        <div class="flex flex-wrap gap-2">
+          <button id="exportBtn" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition">خروجي اکسل</button>
+          <button id="importBtn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition">ورود اطلاعات از اکسل</button>
+          <button id="settingsBtn" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition">تنظيمات</button>
+        </div>
+      </div>
+    </header>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- بخش افزودن مشتري -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4">افزودن مشتري جديد</h2>
+        <form id="customerForm" class="space-y-4">
+          <div>
+            <label class="block text-gray-700 mb-1">نام و نام خانوادگي</label>
+            <input type="text" id="name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">شماره موبايل</label>
+            <input type="tel" id="phone" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">ايميل</label>
+            <input type="email" id="email" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">تاريخ تولد</label>
+            <div class="relative">
+              <input type="text" id="birthDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly required>
+              <input type="hidden" id="birthDay">
+              <input type="hidden" id="birthMonth">
+              <input type="hidden" id="birthYear">
+              <div id="datepicker" class="jalali-datepicker hidden"></div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">دسته‌بندي</label>
+            <select id="category" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="مشتري عادي">مشتري عادي</option>
+              <option value="مشتري ويژه">مشتري ويژه</option>
+              <option value="همکار">همکار</option>
+              <option value="خانواده">خانواده</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">يادداشت</label>
+            <textarea id="notes" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="2"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">ذخيره مشتري</button>
+        </form>
+      </div>
+
+      <!-- تولدهاي نزديک -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4">تولدهاي نزديک</h2>
+        <div id="upcomingBirthdays" class="space-y-3 max-h-96 overflow-y-auto">
+          <!-- با JS پر مي‌شود -->
+        </div>
+      </div>
+
+      <!-- جستجو و فيلتر -->
+      <div class="bg-white rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4">جستجو و فيلتر</h2>
+        <div class="space-y-4">
+          <div>
+            <label class="block text-gray-700 mb-1">جستجو</label>
+            <input type="text" id="searchInput" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="نام، شماره يا ايميل...">
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">فيلتر بر اساس دسته‌بندي</label>
+            <select id="categoryFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">همه دسته‌ها</option>
+              <option value="مشتري عادي">مشتري عادي</option>
+              <option value="مشتري ويژه">مشتري ويژه</option>
+              <option value="همکار">همکار</option>
+              <option value="خانواده">خانواده</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">فيلتر بر اساس ماه تولد</label>
+            <select id="monthFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">همه ماه‌ها</option>
+              <option value="1">فروردين</option>
+              <option value="2">ارديبهشت</option>
+              <option value="3">خرداد</option>
+              <option value="4">تير</option>
+              <option value="5">مرداد</option>
+              <option value="6">شهريور</option>
+              <option value="7">مهر</option>
+              <option value="8">آبان</option>
+              <option value="9">آذر</option>
+              <option value="10">دي</option>
+              <option value="11">بهمن</option>
+              <option value="12">اسفند</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ليست مشتريان -->
+    <div class="mt-8 bg-white rounded-lg shadow-lg p-6">
+      <h2 class="text-xl font-bold text-indigo-800 mb-4">ليست مشتريان</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-gray-300 px-4 py-2 text-right">نام</th>
+              <th class="border border-gray-300 px-4 py-2 text-right">شماره موبايل</th>
+              <th class="border border-gray-300 px-4 py-2 text-right">ايميل</th>
+              <th class="border border-gray-300 px-4 py-2 text-right">تاريخ تولد</th>
+              <th class="border border-gray-300 px-4 py-2 text-right">دسته‌بندي</th>
+              <th class="border border-gray-300 px-4 py-2 text-right">عمليات</th>
+            </tr>
+          </thead>
+          <tbody id="customersList">
+            <!-- با JS پر مي‌شود -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- مودال تنظيمات -->
+    <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4">تنظيمات سيستم</h2>
+        <form id="settingsForm" class="space-y-4">
+          <div>
+            <label class="block text-gray-700 mb-1">چند روز قبل از تولد يادآوري شود؟</label>
+            <input type="number" id="reminderDays" min="1" max="30" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" value="7">
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">متن پيام تبريک</label>
+            <textarea id="birthdayMessage" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3">مشتري گرامي [نام]، تولد شما را تبريک مي‌گوييم. به مناسبت اين روز، کد تخفيف [کد] براي شما فعال شده است.</textarea>
+          </div>
+          <div class="flex justify-end space-x-2 space-x-reverse">
+            <button type="button" id="closeSettingsBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">انصراف</button>
+            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">ذخيره تنظيمات</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- مودال ويرايش مشتري -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4">ويرايش مشتري</h2>
+        <form id="editForm" class="space-y-4">
+          <input type="hidden" id="editId">
+          <div>
+            <label class="block text-gray-700 mb-1">نام و نام خانوادگي</label>
+            <input type="text" id="editName" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">شماره موبايل</label>
+            <input type="tel" id="editPhone" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">ايميل</label>
+            <input type="email" id="editEmail" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">تاريخ تولد</label>
+            <div class="relative">
+              <input type="text" id="editBirthDate" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" readonly required>
+              <input type="hidden" id="editBirthDay">
+              <input type="hidden" id="editBirthMonth">
+              <input type="hidden" id="editBirthYear">
+              <div id="editDatepicker" class="jalali-datepicker hidden"></div>
+            </div>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">دسته‌بندي</label>
+            <select id="editCategory" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="مشتري عادي">مشتري عادي</option>
+              <option value="مشتري ويژه">مشتري ويژه</option>
+              <option value="همکار">همکار</option>
+              <option value="خانواده">خانواده</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-1">يادداشت</label>
+            <textarea id="editNotes" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="2"></textarea>
+          </div>
+          <div class="flex justify-end space-x-2 space-x-reverse">
+            <button type="button" id="closeEditBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">انصراف</button>
+            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">ذخيره تغييرات</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- مودال ورود اطلاعات از اکسل -->
+    <div id="importModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+      <div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold text-indigo-800 mb-4">ورود اطلاعات از اکسل</h2>
+        <form id="importForm" class="space-y-4">
+          <div>
+            <label class="block text-gray-700 mb-1">فايل اکسل (CSV)</label>
+            <input type="file" id="csvFile" accept=".csv" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-sm text-gray-500 mt-1">فرمت فايل: نام، شماره موبايل، ايميل، روز تولد، ماه تولد، سال تولد، دسته‌بندي، يادداشت</p>
+          </div>
+          <div class="flex justify-end space-x-2 space-x-reverse">
+            <button type="button" id="closeImportBtn" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition">انصراف</button>
+            <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">ورود اطلاعات</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- شروع اسکريپت‌ها -->
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // کلاس JalaliDate
+        class JalaliDate {
+          constructor(year, month, day) {
+            this.gregorianDate = this.jalaliToGregorian(year, month, day);
+            this.year = year;
+            this.month = month;
+            this.day = day;
+          }
+
+          static now() {
+            const today = new Date();
+            const jalali = JalaliDate.gregorianToJalali(
+              today.getFullYear(),
+              today.getMonth() + 1,
+              today.getDate()
+            );
+            return new JalaliDate(jalali[0], jalali[1], jalali[2]);
+          }
+
+          static gregorianToJalali(gy, gm, gd) {
+            var g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+            var jy = (gy <= 1600) ? 0 : 979;
+            gy -= (gy <= 1600) ? 621 : 1600;
+            var gy2 = (gm > 2) ? (gy + 1) : gy;
+            var days = (365 * gy) + parseInt((gy2 + 3) / 4) - parseInt((gy2 + 99) / 100) +
+              parseInt((gy2 + 399) / 400) - 80 + gd + g_d_m[gm - 1];
+            jy += 33 * parseInt(days / 12053);
+            days %= 12053;
+            jy += 4 * parseInt(days / 1461);
+            days %= 1461;
+            jy += parseInt((days - 1) / 365);
+            if (days > 365) days = (days - 1) % 365;
+            var jm = (days < 186) ? 1 + parseInt(days / 31) : 7 + parseInt((days - 186) / 30);
+            var jd = 1 + ((days < 186) ? (days % 31) : ((days - 186) % 30));
+            return [jy, jm, jd];
+          }
+
+          jalaliToGregorian(jy, jm, jd) {
+            var gy = (jy <= 979) ? 621 : 1600;
+            jy -= (jy <= 979) ? 0 : 979;
+            var days = (365 * jy) + (parseInt(jy / 33) * 8) + parseInt(((jy % 33) + 3) / 4) + 78 + jd +
+              ((jm < 7) ? (jm - 1) * 31 : ((jm - 7) * 30) + 186);
+            gy += 400 * parseInt(days / 146097);
+            days %= 146097;
+            if (days > 36524) {
+              gy += 100 * parseInt(--days / 36524);
+              days %= 36524;
+              if (days >= 365) days++;
+            }
+            gy += 4 * parseInt((days) / 1461);
+            days %= 1461;
+            gy += parseInt((days - 1) / 365);
+            if (days > 365) days = (days - 1) % 365;
+            var gm, gd;
+            if (days < 186) {
+              gm = 1 + parseInt(days / 31);
+              gd = 1 + (days % 31);
+            } else {
+              gm = 7 + parseInt((days - 186) / 30);
+              gd = 1 + ((days - 186) % 30);
+            }
+            return new Date(gy, gm - 1, gd);
+          }
+
+          format() {
+            return `${this.year}/${this.month.toString().padStart(2, '0')}/${this.day.toString().padStart(2, '0')}`;
+          }
+
+          static isLeapYear(year) {
+            return ((year % 33) % 4) === 1;
+          }
+
+          static getDaysInMonth(year, month) {
+            if (month <= 6) return 31;
+            if (month <= 11) return 30;
+            return JalaliDate.isLeapYear(year) ? 30 : 29;
+          }
+
+          static getMonthName(month) {
+            const months = ['', 'فروردين', 'ارديبهشت', 'خرداد', 'تير', 'مرداد', 'شهريور',
+              'مهر', 'آبان', 'آذر', 'دي', 'بهمن', 'اسفند'];
+            return months[month];
+          }
+
+          static getWeekdayName(weekday) {
+            const weekdays = ['يکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنجشنبه', 'جمعه', 'شنبه'];
+            return weekdays[weekday];
+          }
+        }
+        // کلاس JalaliDatepicker
+        class JalaliDatepicker {
+          constructor(inputElement, hiddenDayElement, hiddenMonthElement, hiddenYearElement, datepickerElement) {
+            this.inputElement = inputElement;
+            this.hiddenDayElement = hiddenDayElement;
+            this.hiddenMonthElement = hiddenMonthElement;
+            this.hiddenYearElement = hiddenYearElement;
+            this.datepickerElement = datepickerElement;
+            this.currentDate = JalaliDate.now();
+            this.selectedDate = null;
+
+            this.inputElement.addEventListener('click', () => this.show());
+            document.addEventListener('click', (e) => {
+              if (!this.datepickerElement.contains(e.target) && e.target !== this.inputElement) {
+                this.hide();
+              }
+            });
+
+            this.render();
+          }
+
+          show() {
+            this.datepickerElement.classList.remove('hidden');
+            this.datepickerElement.classList.add('block');
+          }
+
+          hide() {
+            this.datepickerElement.classList.remove('block');
+            this.datepickerElement.classList.add('hidden');
+          }
+
+          render() {
+            const year = this.currentDate.year;
+            const month = this.currentDate.month;
+            this.datepickerElement.innerHTML = '';
+
+            // Header
+            const header = document.createElement('div');
+            header.className = 'header';
+            header.innerHTML = `
+              <button type="button" class="prev-month text-gray-600 hover:text-gray-900">&#10094;</button>
+              <div class="month-year">${JalaliDate.getMonthName(month)} ${year}</div>
+              <button type="button" class="next-month text-gray-600 hover:text-gray-900">&#10095;</button>
+            `;
+            this.datepickerElement.appendChild(header);
+
+            header.querySelector('.prev-month').addEventListener('click', () => {
+              if (month === 1) {
+                this.currentDate = new JalaliDate(year - 1, 12, 1);
+              } else {
+                this.currentDate = new JalaliDate(year, month - 1, 1);
+              }
+              this.render();
+            });
+
+            header.querySelector('.next-month').addEventListener('click', () => {
+              if (month === 12) {
+                this.currentDate = new JalaliDate(year + 1, 1, 1);
+              } else {
+                this.currentDate = new JalaliDate(year, month + 1, 1);
+              }
+              this.render();
+            });
+
+            // Weekdays
+            const weekdays = document.createElement('div');
+            weekdays.className = 'weekdays';
+            const weekdayNames = ['ش', 'ي', 'د', 'س', 'چ', 'پ', 'ج'];
+            weekdayNames.forEach(name => {
+              const weekday = document.createElement('div');
+              weekday.className = 'weekday';
+              weekday.textContent = name;
+              weekdays.appendChild(weekday);
+            });
+            this.datepickerElement.appendChild(weekdays);
+
+            // Days
+            const days = document.createElement('div');
+            days.className = 'days';
+
+            const firstDayOfMonth = new JalaliDate(year, month, 1);
+            const firstDayWeekday = firstDayOfMonth.gregorianDate.getDay();
+
+            const prevMonth = month === 1 ? 12 : month - 1;
+            const prevYear = month === 1 ? year - 1 : year;
+            const daysInPrevMonth = JalaliDate.getDaysInMonth(prevYear, prevMonth);
+
+            for (let i = 0; i < (firstDayWeekday + 1) % 7; i++) {
+              const day = document.createElement('div');
+              day.className = 'day other-month';
+              day.textContent = daysInPrevMonth - ((firstDayWeekday + 1) % 7) + i + 1;
+              days.appendChild(day);
+            }
+
+            const daysInMonth = JalaliDate.getDaysInMonth(year, month);
+            const today = JalaliDate.now();
+
+            for (let i = 1; i <= daysInMonth; i++) {
+              const day = document.createElement('div');
+              day.className = 'day';
+              day.textContent = i;
+
+              if (year === today.year && month === today.month && i === today.day) {
+                day.classList.add('today');
+              }
+
+              if (this.selectedDate && year === this.selectedDate.year && month === this.selectedDate.month && i === this.selectedDate.day) {
+                day.classList.add('selected');
+              }
+
+              day.addEventListener('click', () => {
+                this.selectedDate = new JalaliDate(year, month, i);
+                this.inputElement.value = `${i} ${JalaliDate.getMonthName(month)} ${year}`;
+                this.hiddenDayElement.value = i;
+                this.hiddenMonthElement.value = month;
+                this.hiddenYearElement.value = year;
+                this.hide();
+                this.render();
+              });
+
+              days.appendChild(day);
+            }
+
+            const lastDayWeekday = (firstDayWeekday + daysInMonth) % 7;
+            const nextDays = 7 - lastDayWeekday - 1;
+
+            for (let i = 1; i <= nextDays; i++) {
+              const day = document.createElement('div');
+              day.className = 'day other-month';
+              day.textContent = i;
+              days.appendChild(day);
+            }
+
+            this.datepickerElement.appendChild(days);
+          }
+
+          setDate(year, month, day) {
+            this.selectedDate = new JalaliDate(year, month, day);
+            this.currentDate = new JalaliDate(year, month, 1);
+            this.inputElement.value = `${day} ${JalaliDate.getMonthName(month)} ${year}`;
+            this.hiddenDayElement.value = day;
+            this.hiddenMonthElement.value = month;
+            this.hiddenYearElement.value = year;
+            this.render();
+          }
+        }
+        // ايجاد انتخاب‌گر تاريخ
+        const datepicker = new JalaliDatepicker(
+          document.getElementById('birthDate'),
+          document.getElementById('birthDay'),
+          document.getElementById('birthMonth'),
+          document.getElementById('birthYear'),
+          document.getElementById('datepicker')
+        );
+
+        const editDatepicker = new JalaliDatepicker(
+          document.getElementById('editBirthDate'),
+          document.getElementById('editBirthDay'),
+          document.getElementById('editBirthMonth'),
+          document.getElementById('editBirthYear'),
+          document.getElementById('editDatepicker')
+        );
+
+        // تنظيمات پيش‌فرض
+        let settings = {
+          reminderDays: 7,
+          birthdayMessage: 'مشتري گرامي [نام]، تولد شما را تبريک مي‌گوييم. به مناسبت اين روز، کد تخفيف [کد] براي شما فعال شده است.'
+        };
+
+        // بارگذاري تنظيمات از localStorage
+        const savedSettings = localStorage.getItem('birthdaySettings');
+        if (savedSettings) {
+          settings = JSON.parse(savedSettings);
+          document.getElementById('reminderDays').value = settings.reminderDays;
+          document.getElementById('birthdayMessage').value = settings.birthdayMessage;
+        }
+
+        // بارگذاري مشتريان از localStorage
+        let customers = [];
+        const savedCustomers = localStorage.getItem('birthdayCustomers');
+        if (savedCustomers) {
+          customers = JSON.parse(savedCustomers);
+        }
+
+        renderCustomers();
+        renderUpcomingBirthdays();
+
+        // ثبت مشتري جديد
+        document.getElementById('customerForm').addEventListener('submit', function (e) {
+          e.preventDefault();
+          const birthDay = parseInt(document.getElementById('birthDay').value);
+          const birthMonth = parseInt(document.getElementById('birthMonth').value);
+          const birthYear = parseInt(document.getElementById('birthYear').value);
+
+          if (!birthDay || !birthMonth || !birthYear) {
+            alert('لطفاً تاريخ تولد را انتخاب کنيد.');
+            return;
+          }
+
+          const newCustomer = {
+            id: Date.now(),
+            name: document.getElementById('name').value,
+            phone: document.getElementById('phone').value,
+            email: document.getElementById('email').value,
+            birthDay: birthDay,
+            birthMonth: birthMonth,
+            birthYear: birthYear,
+            category: document.getElementById('category').value,
+            notes: document.getElementById('notes').value
+          };
+
+          customers.push(newCustomer);
+          saveCustomers();
+          renderCustomers();
+          renderUpcomingBirthdays();
+
+          this.reset();
+          document.getElementById('birthDate').value = '';
+          document.getElementById('birthDay').value = '';
+          document.getElementById('birthMonth').value = '';
+          document.getElementById('birthYear').value = '';
+        });
+
+        // ذخيره مشتريان در localStorage
+        function saveCustomers() {
+          localStorage.setItem('birthdayCustomers', JSON.stringify(customers));
+        }
+
+        // نمايش ليست مشتريان
+        function renderCustomers() {
+          const customersList = document.getElementById('customersList');
+          customersList.innerHTML = '';
+
+          const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+          const categoryFilter = document.getElementById('categoryFilter').value;
+          const monthFilter = document.getElementById('monthFilter').value;
+
+          const filteredCustomers = customers.filter(customer => {
+            const matchesSearch =
+              customer.name.toLowerCase().includes(searchTerm) ||
+              customer.phone.includes(searchTerm) ||
+              (customer.email && customer.email.toLowerCase().includes(searchTerm));
+
+            const matchesCategory = categoryFilter === '' || customer.category === categoryFilter;
+            const matchesMonth = monthFilter === '' || customer.birthMonth === parseInt(monthFilter);
+
+            return matchesSearch && matchesCategory && matchesMonth;
+          });
+
+          filteredCustomers.forEach(customer => {
+            const row = document.createElement('tr');
+            const today = JalaliDate.now();
+
+            if (customer.birthMonth === today.month && customer.birthDay === today.day) {
+              row.classList.add('birthday-today');
+            } else if (isUpcomingBirthday(customer.birthDay, customer.birthMonth, settings.reminderDays)) {
+              row.classList.add('birthday-soon');
+            }
+
+            row.innerHTML = `
+              <td class="border border-gray-300 px-4 py-2">${customer.name}</td>
+              <td class="border border-gray-300 px-4 py-2">${customer.phone}</td>
+              <td class="border border-gray-300 px-4 py-2">${customer.email || '-'}</td>
+              <td class="border border-gray-300 px-4 py-2">${customer.birthDay} ${JalaliDate.getMonthName(customer.birthMonth)} ${customer.birthYear}</td>
+              <td class="border border-gray-300 px-4 py-2">${customer.category}</td>
+              <td class="border border-gray-300 px-4 py-2">
+                <div class="flex space-x-2 space-x-reverse">
+                  <button class="edit-btn bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600 transition" data-id="${customer.id}">ويرايش</button>
+                  <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600 transition" data-id="${customer.id}">حذف</button>
+                </div>
+              </td>
+            `;
+            customersList.appendChild(row);
+          });
+
+          // دکمه‌هاي ويرايش و حذف
+          document.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+              const id = parseInt(this.getAttribute('data-id'));
+              editCustomer(id);
+            });
+          });
+
+          document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', function () {
+              const id = parseInt(this.getAttribute('data-id'));
+              if (confirm('آيا از حذف اين مشتري اطمينان داريد؟')) {
+                deleteCustomer(id);
+              }
+            });
+          });
+        }
+        function renderUpcomingBirthdays() {
+          const upcomingContainer = document.getElementById('upcomingBirthdays');
+          upcomingContainer.innerHTML = '';
+          const today = JalaliDate.now();
+
+          const upcoming = customers.filter(customer => {
+            return isUpcomingBirthday(customer.birthDay, customer.birthMonth, settings.reminderDays);
+          });
+
+          upcoming.forEach(customer => {
+            const div = document.createElement('div');
+            div.className = 'p-3 border rounded shadow-sm bg-indigo-50';
+            div.innerHTML = `
+              <strong>${customer.name}</strong><br>
+              ${customer.birthDay} ${JalaliDate.getMonthName(customer.birthMonth)}<br>
+              <small>${customer.phone}</small>
+            `;
+            upcomingContainer.appendChild(div);
+          });
+        }
+
+        function isUpcomingBirthday(day, month, range) {
+          const today = JalaliDate.now();
+          let todayDayOfYear = getDayOfYear(today.month, today.day);
+          let targetDayOfYear = getDayOfYear(month, day);
+          if (targetDayOfYear < todayDayOfYear) {
+            targetDayOfYear += 366; // فرض leap year
+          }
+          return (targetDayOfYear - todayDayOfYear) <= range;
+        }
+
+        function getDayOfYear(month, day) {
+          const daysInMonths = [0, 31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+          let dayOfYear = 0;
+          for (let i = 1; i < month; i++) {
+            dayOfYear += daysInMonths[i];
+          }
+          return dayOfYear + day;
+        }
+
+        function deleteCustomer(id) {
+          customers = customers.filter(c => c.id !== id);
+          saveCustomers();
+          renderCustomers();
+          renderUpcomingBirthdays();
+        }
+
+        function editCustomer(id) {
+          const customer = customers.find(c => c.id === id);
+          if (!customer) return;
+
+          document.getElementById('editId').value = customer.id;
+          document.getElementById('editName').value = customer.name;
+          document.getElementById('editPhone').value = customer.phone;
+          document.getElementById('editEmail').value = customer.email;
+          document.getElementById('editCategory').value = customer.category;
+          document.getElementById('editNotes').value = customer.notes;
+          editDatepicker.setDate(customer.birthYear, customer.birthMonth, customer.birthDay);
+
+          document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        document.getElementById('closeEditBtn').addEventListener('click', () => {
+          document.getElementById('editModal').classList.add('hidden');
+        });
+
+        document.getElementById('editForm').addEventListener('submit', function (e) {
+          e.preventDefault();
+          const id = parseInt(document.getElementById('editId').value);
+          const customer = customers.find(c => c.id === id);
+          if (!customer) return;
+
+          customer.name = document.getElementById('editName').value;
+          customer.phone = document.getElementById('editPhone').value;
+          customer.email = document.getElementById('editEmail').value;
+          customer.category = document.getElementById('editCategory').value;
+          customer.notes = document.getElementById('editNotes').value;
+          customer.birthDay = parseInt(document.getElementById('editBirthDay').value);
+          customer.birthMonth = parseInt(document.getElementById('editBirthMonth').value);
+          customer.birthYear = parseInt(document.getElementById('editBirthYear').value);
+
+          saveCustomers();
+          renderCustomers();
+          renderUpcomingBirthdays();
+          document.getElementById('editModal').classList.add('hidden');
+        });
+
+        // جستجو و فيلتر
+        document.getElementById('searchInput').addEventListener('input', renderCustomers);
+        document.getElementById('categoryFilter').addEventListener('change', renderCustomers);
+        document.getElementById('monthFilter').addEventListener('change', renderCustomers);
+
+        // تنظيمات
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+          document.getElementById('settingsModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeSettingsBtn').addEventListener('click', () => {
+          document.getElementById('settingsModal').classList.add('hidden');
+        });
+
+        document.getElementById('settingsForm').addEventListener('submit', function (e) {
+          e.preventDefault();
+          settings.reminderDays = parseInt(document.getElementById('reminderDays').value);
+          settings.birthdayMessage = document.getElementById('birthdayMessage').value;
+          localStorage.setItem('birthdaySettings', JSON.stringify(settings));
+          document.getElementById('settingsModal').classList.add('hidden');
+          renderUpcomingBirthdays();
+        });
+
+        // ورود اطلاعات از فايل CSV
+        document.getElementById('importBtn').addEventListener('click', () => {
+          document.getElementById('importModal').classList.remove('hidden');
+        });
+
+        document.getElementById('closeImportBtn').addEventListener('click', () => {
+          document.getElementById('importModal').classList.add('hidden');
+        });
+
+        document.getElementById('importForm').addEventListener('submit', function (e) {
+          e.preventDefault();
+          const file = document.getElementById('csvFile').files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const lines = e.target.result.split('\n');
+            lines.forEach(line => {
+              const [name, phone, email, birthDay, birthMonth, birthYear, category, notes] = line.split(',');
+              if (name && phone) {
+                customers.push({
+                  id: Date.now() + Math.random(),
+                  name: name.trim(),
+                  phone: phone.trim(),
+                  email: email.trim(),
+                  birthDay: parseInt(birthDay),
+                  birthMonth: parseInt(birthMonth),
+                  birthYear: parseInt(birthYear),
+                  category: category.trim(),
+                  notes: notes.trim()
+                });
+              }
+            });
+            saveCustomers();
+            renderCustomers();
+            renderUpcomingBirthdays();
+            document.getElementById('importModal').classList.add('hidden');
+          };
+          reader.readAsText(file);
+        });
+
+        // خروجي CSV
+        document.getElementById('exportBtn').addEventListener('click', function () {
+          let csvContent = "data:text/csv;charset=utf-8,";
+          customers.forEach(c => {
+            const row = [c.name, c.phone, c.email, c.birthDay, c.birthMonth, c.birthYear, c.category, c.notes].join(',');
+            csvContent += row + "\r\n";
+          });
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', 'customers.csv');
+          document.body.appendChild(link);
+          link.click();
+        });
+      }); // DOMContentLoaded
+    </script>
+  </div>
+</body>
+</html>
